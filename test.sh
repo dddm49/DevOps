@@ -1,6 +1,6 @@
 #!/bin/sh
 echo "This is test.sh "
-echo "This is new repository"
+echo "This is new repository 2"
 
 
 sudo apt-get install openjdk-8-jdk
