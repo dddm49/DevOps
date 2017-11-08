@@ -10,4 +10,7 @@ ssh-keygen
 
 
 echo "$passwd
-$passwd" | adduser --force-badname "$username"
+$passwd" | adduser --force-badname "$username"	
+
+sudo usermod -aG sudo testdep
+
