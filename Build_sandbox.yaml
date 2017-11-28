@@ -1,0 +1,113 @@
+heat_template_version: '2014-10-16'
+parameters:
+  Build1Main-Stage:
+    default: simplescript/test.sh
+    type: string
+  Build1Post-Stage:
+    default: simplescript/test2.sh
+    type: string
+  Build1Pre-Stage:
+    default: simplescript/test.sh
+    type: string
+  Build1SCM:
+    default: https://github.com/aciculachen/simplescript.git
+    type: string
+  Build1flavor:
+    default: 2cores2GBmemory10GBdisk
+    type: string
+  Build1image:
+    default: Ubuntu14.04server
+    type: string
+  key:
+    default: testkey
+    type: string
+  public_net:
+    default: net04_ext
+    type: string
+resources:
+  Build1:
+    properties:
+      flavor:
+        get_param: Build1flavor
+      image:
+        get_param: Build1image
+      key_name:
+        get_param: key
+      name: Build1
+      networks:
+      - network: mynetwork
+      security_groups:
+      - get_resource: web_server_security_group
+      user_data:
+        get_resource: Build1_boot_script
+      user_data_format: SOFTWARE_CONFIG
+    type: OS::Nova::Server
+  Build1_boot_script:
+    properties:
+      config:
+        str_replace:
+          params:
+            $MS:
+              get_param: Build1Main-Stage
+            $PostS:
+              get_param: Build1Post-Stage
+            $PreS:
+              get_param: Build1Pre-Stage
+            $URL:
+              get_param: Build1SCM
+          template: '#!/bin/bash
+
+            sudo apt-get update
+
+            sudo apt-get -y install git
+
+            git clone $URL
+
+            sh $PreS
+
+            sh $MS
+
+            sh $PostS
+
+            '
+      group: ungrouped
+    type: OS::Heat::SoftwareConfig
+  Build1_floating:
+    properties:
+      floating_ip:
+        get_resource: Build1_floating_ip
+      server_id:
+        get_resource: Build1
+    type: OS::Nova::FloatingIPAssociation
+  Build1_floating_ip:
+    properties:
+      pool:
+        get_param: public_net
+    type: OS::Nova::FloatingIP
+  web_server_security_group:
+    properties:
+      name: web_server_security_group
+      rules:
+      - port_range_max: 22
+        port_range_min: 22
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+      - port_range_max: 80
+        port_range_min: 80
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+      - port_range_max: 443
+        port_range_min: 443
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+      - port_range_max: 4506
+        port_range_min: 4505
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+      - port_range_max: 8000
+        port_range_min: 8000
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+      - protocol: icmp
+        remote_ip_prefix: 0.0.0.0/0
+    type: OS::Neutron::SecurityGroup
